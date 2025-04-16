@@ -1,0 +1,164 @@
+package com.example;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
+
+import javax.persistence.*;
+
+import java.util.List;
+
+public class HibernateCRUDExample {
+
+    // Hibernate configuration and SessionFactory setup
+    private static SessionFactory sessionFactory;
+
+    static {
+        try {
+            sessionFactory = new Configuration().configure("hibernate.cfg.xml")
+                    .addAnnotatedClass(Student.class)
+                    .buildSessionFactory();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Entity Class (Student)
+    @Entity
+    @Table(name = "students")
+    public static class Student {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private int id;
+
+        @Column(name = "name")
+        private String name;
+
+        @Column(name = "age")
+        private int age;
+
+        // Constructors
+        public Student() {}
+
+        public Student(String name, int age) {
+            this.name = name;
+            this.age = age;
+        }
+
+        // Getters and Setters
+        public int getId() {
+            return id;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public int getAge() {
+            return age;
+        }
+
+        public void setAge(int age) {
+            this.age = age;
+        }
+
+        @Override
+        public String toString() {
+            return "Student{id=" + id + ", name='" + name + "', age=" + age + "}";
+        }
+    }
+
+    // CRUD Operations
+    public static class StudentDAO {
+
+        // Create a new student
+        public void createStudent(Student student) {
+            Session session = sessionFactory.getCurrentSession();
+            Transaction transaction = session.beginTransaction();
+            session.save(student);
+            transaction.commit();
+        }
+
+        // Read a student by ID
+        public Student getStudent(int studentId) {
+            Session session = sessionFactory.getCurrentSession();
+            Transaction transaction = session.beginTransaction();
+            Student student = session.get(Student.class, studentId);
+            transaction.commit();
+            return student;
+        }
+
+        // Update a student's details
+        public void updateStudent(Student student) {
+            Session session = sessionFactory.getCurrentSession();
+            Transaction transaction = session.beginTransaction();
+            session.update(student);
+            transaction.commit();
+        }
+
+        // Delete a student
+        public void deleteStudent(int studentId) {
+            Session session = sessionFactory.getCurrentSession();
+            Transaction transaction = session.beginTransaction();
+            Student student = session.get(Student.class, studentId);
+            if (student != null) {
+                session.delete(student);
+            }
+            transaction.commit();
+        }
+
+        // Get all students
+        public List<Student> getAllStudents() {
+            Session session = sessionFactory.getCurrentSession();
+            Transaction transaction = session.beginTransaction();
+            Query<Student> query = session.createQuery("from Student", Student.class);
+            List<Student> students = query.getResultList();
+            transaction.commit();
+            return students;
+        }
+    }
+
+    // Main method for testing
+    public static void main(String[] args) {
+        StudentDAO studentDAO = new StudentDAO();
+
+        // Create new students
+        Student student1 = new Student("John Doe", 20);
+        Student student2 = new Student("Jane Smith", 22);
+        studentDAO.createStudent(student1);
+        studentDAO.createStudent(student2);
+
+        // Read student by ID
+        Student fetchedStudent = studentDAO.getStudent(1);
+        System.out.println("Fetched Student: " + fetchedStudent);
+
+        // Update student
+        fetchedStudent.setAge(21);
+        studentDAO.updateStudent(fetchedStudent);
+        System.out.println("Updated Student: " + studentDAO.getStudent(fetchedStudent.getId()));
+
+        // Delete student
+        studentDAO.deleteStudent(fetchedStudent.getId());
+
+        // Get all students
+        List<Student> students = studentDAO.getAllStudents();
+        System.out.println("All Students after deletion:");
+        for (Student student : students) {
+            System.out.println(student);
+        }
+
+        // Close SessionFactory
+        sessionFactory.close();
+    }
+}
